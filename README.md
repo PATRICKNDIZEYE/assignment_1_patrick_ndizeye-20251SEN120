@@ -1,8 +1,9 @@
-# Sunrise Supermarket - SQL Assignment 1
+# Sunrise Supermarket 
+## SQL Assignment 1
 
 Patrick Ndizeye, 20251SEN120
 
-DBMS: PostgreSQL 16. I didn't have Oracle installed, so I converted the given `NUMBER` / `VARCHAR2` schema to Postgres types (`INTEGER`, `NUMERIC`, `VARCHAR`) and ran everything for real instead of submitting SQL I never tested.
+DBMS: PostgreSQL 16.
 
 ## What's here
 
@@ -175,11 +176,3 @@ ORDER BY customer_id, order_date;
 `LAG()` pulls each customer's previous order date so it can be subtracted from the current one. `COUNT(*) OVER (...)` filters out anyone with a single order (nobody here, but the query needs to hold up in general). A customer's first order naturally has no previous order to compare, hence the null.
 
 ![Result](screenshots/08_window_days_between_orders.png)
-
-Reorder gaps sit mostly between 1 and 4 weeks. Eric Hana's 29-day gap is the widest, and combined with his low total spend from the CTE query, he's the customer most likely to churn.
-
-## Challenges
-
-- No Oracle installed locally, so I ported the DDL to Postgres types and ran it against a real database instead of submitting untested SQL. Table structure and query logic didn't change, only the type keywords.
-- With the minimum 5 customers, LEFT JOIN vs INNER JOIN would look identical. Added a customer with zero orders so it actually demonstrates something.
-- Filtering the CTE's average against `AVG(total_spent)` computed from the same CTE (not from raw order-item rows) keeps the average correct instead of over-weighting customers with more line items.
