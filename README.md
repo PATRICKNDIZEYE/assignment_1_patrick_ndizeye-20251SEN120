@@ -176,3 +176,9 @@ ORDER BY customer_id, order_date;
 `LAG()` pulls each customer's previous order date so it can be subtracted from the current one. `COUNT(*) OVER (...)` filters out anyone with a single order (nobody here, but the query needs to hold up in general). A customer's first order naturally has no previous order to compare, hence the null.
 
 ![Result](screenshots/08_window_days_between_orders.png)
+
+## Challenges
+
+- No Oracle installed locally, so I ported the DDL to Postgres types (`NUMBER` to `INTEGER`/`NUMERIC`, `VARCHAR2` to `VARCHAR`) and ran everything against a real database instead of submitting untested SQL.
+- With just the required 5 customers, LEFT JOIN vs INNER JOIN would look identical since everyone has orders. Added a 6th customer with none so it actually proves something.
+- Filtered the CTE's average against `AVG(total_spent)` from the same CTE, not from raw order-item rows, so customers with more line items don't skew the average.
