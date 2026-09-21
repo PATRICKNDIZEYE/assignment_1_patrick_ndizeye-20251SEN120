@@ -2,20 +2,13 @@
 
 **Name:** Patrick Ndizeye
 **Student ID:** 20251SEN120
+**DBMS:** PostgreSQL 16 (Oracle wasn't installed on my machine, so I adapted the given `NUMBER`/`VARCHAR2` schema to Postgres types and ran everything for real instead of submitting untested SQL)
 
-## DBMS used
+## What this is
 
-**PostgreSQL 16** (via `psql`), run against a local server.
+The `customers` / `products` / `orders` / `order_items` schema from the assignment, filled with sample data, plus the required JOIN, CTE, and window-function queries answering questions about customers, what they buy, and how sales move over time.
 
-> Note: the assignment's provided `CREATE TABLE` statements use Oracle types (`NUMBER`, `VARCHAR2`). I don't have Oracle installed locally, so rather than submit SQL I couldn't actually run, I ported the schema to standard/PostgreSQL types (`INTEGER`, `NUMERIC`, `VARCHAR`) and executed everything for real. The table names, columns, relationships, and query logic are unchanged — only the type keywords differ. See **Challenges & Resolutions** below.
-
-## Summary
-
-Implements the Sunrise Supermarket schema (`customers`, `products`, `orders`, `order_items`), populates it with sample data (6 customers, 8 products across 4 categories, 15 orders, 25 order items across Jan–Mar 2026), and answers the required JOIN, CTE, and window-function questions about customers, purchases, and sales trends.
-
-## How to run
-
-Requires PostgreSQL (`createdb`, `psql`) available on the path.
+## How to run it
 
 ```bash
 createdb sunrise_supermarket
@@ -24,32 +17,21 @@ psql -d sunrise_supermarket -f sql/data.sql
 psql -d sunrise_supermarket -f sql/queries.sql
 ```
 
-Or run each query individually, e.g.:
+- `sql/schema.sql` — the four tables
+- `sql/data.sql` — 6 customers, 8 products (4 categories), 15 orders, 25 order items, spread Jan–Mar 2026
+- `sql/queries.sql` — all the queries below, runnable as one file or individually
 
-```bash
-psql -d sunrise_supermarket -c "SELECT ... "
-```
+## The scenario
 
-Files:
-- `sql/schema.sql` — table definitions
-- `sql/data.sql` — sample data (customers, products, orders, order_items)
-- `sql/queries.sql` — all JOIN / CTE / window-function queries
+Sunrise Supermarket wants to know three things from this data: who its customers are, what they're buying, and whether sales are growing. Customers place orders, each order has one or more line items (a product + a quantity), and that's basically the whole model.
 
-## Business scenario
-
-Sunrise Supermarket sells products to customers who place orders containing one or more line items. Management wants three things out of the data:
-
-1. **Who their customers are** — where they live, how many orders they place, how much they spend relative to each other.
-2. **What they buy** — which products/categories appear on orders, at what price and quantity.
-3. **How sales trend over time** — order cadence per customer and cumulative revenue growth.
-
-The four tables model this directly: `customers` (who), `products` (what's for sale), `orders` (a purchase event tied to a customer and a date), `order_items` (the line items — product + quantity — that make up an order).
+I added a sixth customer, **Fofo Ndengeyimana**, who has never placed an order — the assignment only requires 5 customers, but with everyone having orders the LEFT JOIN query would look no different from an inner join, so this way it actually proves something.
 
 ---
 
 ## JOIN queries
 
-### 1. Every order with customer name, city, and order date (INNER JOIN)
+### 1. Every order with customer name, city, order date
 
 ```sql
 SELECT o.order_id, c.customer_name, c.city, o.order_date
@@ -58,35 +40,31 @@ INNER JOIN customers c ON c.customer_id = o.customer_id
 ORDER BY o.order_date;
 ```
 
-**Explanation:** joins `orders` to `customers` on `customer_id` so each order row carries the placing customer's name and city. INNER JOIN is correct here because every order must have a valid customer (FK constraint) — there's nothing to preserve on either side.
-
-**Result (15 rows):**
+Straightforward inner join — every order has a customer (it's a FK), so nothing gets lost here.
 
 ```
- order_id |    customer_name    |  city   | order_date
-----------+---------------------+---------+------------
-        1 | Alice Uwase         | Kigali  | 2026-01-05
-        2 | Brian Mugisha       | Musanze | 2026-01-06
-        3 | Claudine Iradukunda | Huye    | 2026-01-08
-        4 | Alice Uwase         | Kigali  | 2026-01-12
-        5 | David Niyonzima     | Kigali  | 2026-01-15
-        6 | Brian Mugisha       | Musanze | 2026-01-18
-        7 | Esther Mukamana     | Rubavu  | 2026-01-20
-        8 | Claudine Iradukunda | Huye    | 2026-01-25
-        9 | Alice Uwase         | Kigali  | 2026-02-02
-       10 | David Niyonzima     | Kigali  | 2026-02-05
-       11 | Brian Mugisha       | Musanze | 2026-02-10
-       12 | Claudine Iradukunda | Huye    | 2026-02-14
-       13 | Esther Mukamana     | Rubavu  | 2026-02-18
-       14 | Alice Uwase         | Kigali  | 2026-02-25
-       15 | David Niyonzima     | Kigali  | 2026-03-01
+ order_id |  customer_name  |  city   | order_date
+----------+-----------------+---------+------------
+        1 | Patrick Ndizeye | Kigali  | 2026-01-05
+        2 | Jean Morris     | Musanze | 2026-01-06
+        3 | Iyaraa Umwe     | Huye    | 2026-01-08
+        4 | Patrick Ndizeye | Kigali  | 2026-01-12
+        5 | David Niyo      | Kigali  | 2026-01-15
+        6 | Jean Morris     | Musanze | 2026-01-18
+        7 | Eric Hana       | Rubavu  | 2026-01-20
+        8 | Iyaraa Umwe     | Huye    | 2026-01-25
+        9 | Patrick Ndizeye | Kigali  | 2026-02-02
+       10 | David Niyo      | Kigali  | 2026-02-05
+       11 | Jean Morris     | Musanze | 2026-02-10
+       12 | Iyaraa Umwe     | Huye    | 2026-02-14
+       13 | Eric Hana       | Rubavu  | 2026-02-18
+       14 | Patrick Ndizeye | Kigali  | 2026-02-25
+       15 | David Niyo      | Kigali  | 2026-03-01
 ```
 
-**Business interpretation:** gives a clean, readable order log for customer service and reporting — no need to look up customer IDs manually. Kigali customers (Alice, David) place orders most frequently in this dataset.
+This is basically the order log a support agent would want — customer name and city right there instead of chasing an ID. Kigali customers (me and David) show up the most in this batch.
 
----
-
-### 2. Every order item with product name, category, price, and quantity (JOIN)
+### 2. Every order item with product, category, price, quantity
 
 ```sql
 SELECT oi.order_item_id, oi.order_id, p.product_name, p.category, p.price, oi.quantity,
@@ -96,9 +74,7 @@ JOIN products p ON p.product_id = oi.product_id
 ORDER BY oi.order_id, oi.order_item_id;
 ```
 
-**Explanation:** joins `order_items` to `products` on `product_id` to turn a bare product-ID/quantity row into a readable line item, and computes a `line_total` (price × quantity) inline.
-
-**Result (25 rows, abridged — see `sql/queries.sql` output for full run):**
+Joins the line items to the product catalog and throws in a `line_total` since it's a one-line calculation.
 
 ```
  order_item_id | order_id |    product_name     | category  | price | quantity | line_total
@@ -108,17 +84,32 @@ ORDER BY oi.order_id, oi.order_item_id;
              3 |        2 | Orange Juice 1L     | Beverages |  2.50 |        3 |       7.50
              4 |        3 | Milk 1L             | Dairy     |  1.50 |        2 |       3.00
              5 |        3 | Cheddar Cheese 200g | Dairy     |  3.20 |        1 |       3.20
-           ... |      ... | ...                 | ...       |   ... |      ... |        ...
+             6 |        4 | Bottled Water 500ml | Beverages |  0.80 |        4 |       3.20
+             7 |        4 | Bananas 1kg         | Produce   |  1.10 |        2 |       2.20
+             8 |        5 | Croissant           | Bakery    |  1.00 |        3 |       3.00
+             9 |        5 | Tomatoes 1kg        | Produce   |  1.40 |        1 |       1.40
+            10 |        6 | Orange Juice 1L     | Beverages |  2.50 |        2 |       5.00
+            11 |        6 | White Bread         | Bakery    |  1.20 |        2 |       2.40
+            12 |        7 | Milk 1L             | Dairy     |  1.50 |        1 |       1.50
+            13 |        8 | Bananas 1kg         | Produce   |  1.10 |        3 |       3.30
+            14 |        8 | Tomatoes 1kg        | Produce   |  1.40 |        2 |       2.80
+            15 |        9 | Bottled Water 500ml | Beverages |  0.80 |        1 |       0.80
+            16 |        9 | Orange Juice 1L     | Beverages |  2.50 |        1 |       2.50
+            17 |       10 | White Bread         | Bakery    |  1.20 |        3 |       3.60
+            18 |       11 | Cheddar Cheese 200g | Dairy     |  3.20 |        2 |       6.40
+            19 |       11 | Bananas 1kg         | Produce   |  1.10 |        1 |       1.10
+            20 |       12 | Tomatoes 1kg        | Produce   |  1.40 |        3 |       4.20
+            21 |       13 | Bottled Water 500ml | Beverages |  0.80 |        2 |       1.60
+            22 |       13 | Milk 1L             | Dairy     |  1.50 |        1 |       1.50
+            23 |       14 | Orange Juice 1L     | Beverages |  2.50 |        1 |       2.50
             24 |       15 | Cheddar Cheese 200g | Dairy     |  3.20 |        1 |       3.20
             25 |       15 | Bananas 1kg         | Produce   |  1.10 |        2 |       2.20
 (25 rows)
 ```
 
-**Business interpretation:** this is the transaction-level view management needs to see which specific products drive revenue on each order — e.g. Beverages and Dairy items tend to be the highest-value line items due to price, even when quantities are modest.
+This is the level of detail you'd actually pull for a "what's selling" report. Beverages and Dairy items carry the highest line totals even in small quantities, since they're priced higher than the Bakery/Produce items.
 
----
-
-### 3. All customers and their orders, including customers with none (LEFT JOIN)
+### 3. All customers and their orders, including customers with none
 
 ```sql
 SELECT c.customer_id, c.customer_name, o.order_id, o.order_date
@@ -127,38 +118,37 @@ LEFT JOIN orders o ON o.customer_id = c.customer_id
 ORDER BY c.customer_id, o.order_date;
 ```
 
-**Explanation:** LEFT JOIN keeps every customer row even when there's no matching order, so customers who have never ordered show up with NULL order fields instead of disappearing.
-
-**Result (16 rows):**
+Same idea but LEFT JOIN, so customers with zero orders still show up (with nulls on the order side) instead of vanishing.
 
 ```
- customer_id |    customer_name    | order_id | order_date
--------------+---------------------+----------+------------
-           1 | Alice Uwase         |        1 | 2026-01-05
-           1 | Alice Uwase         |        4 | 2026-01-12
-           1 | Alice Uwase         |        9 | 2026-02-02
-           1 | Alice Uwase         |       14 | 2026-02-25
-           2 | Brian Mugisha       |        2 | 2026-01-06
-           2 | Brian Mugisha       |        6 | 2026-01-18
-           2 | Brian Mugisha       |       11 | 2026-02-10
-           3 | Claudine Iradukunda |        3 | 2026-01-08
-           3 | Claudine Iradukunda |        8 | 2026-01-25
-           3 | Claudine Iradukunda |       12 | 2026-02-14
-           4 | David Niyonzima     |        5 | 2026-01-15
-           4 | David Niyonzima     |       10 | 2026-02-05
-           4 | David Niyonzima     |       15 | 2026-03-01
-           5 | Esther Mukamana     |        7 | 2026-01-20
-           5 | Esther Mukamana     |       13 | 2026-02-18
-           6 | Faustin Bizimana    |          |
+ customer_id |   customer_name   | order_id | order_date
+-------------+--------------------+----------+------------
+           1 | Patrick Ndizeye   |        1 | 2026-01-05
+           1 | Patrick Ndizeye   |        4 | 2026-01-12
+           1 | Patrick Ndizeye   |        9 | 2026-02-02
+           1 | Patrick Ndizeye   |       14 | 2026-02-25
+           2 | Jean Morris       |        2 | 2026-01-06
+           2 | Jean Morris       |        6 | 2026-01-18
+           2 | Jean Morris       |       11 | 2026-02-10
+           3 | Iyaraa Umwe       |        3 | 2026-01-08
+           3 | Iyaraa Umwe       |        8 | 2026-01-25
+           3 | Iyaraa Umwe       |       12 | 2026-02-14
+           4 | David Niyo        |        5 | 2026-01-15
+           4 | David Niyo        |       10 | 2026-02-05
+           4 | David Niyo        |       15 | 2026-03-01
+           5 | Eric Hana         |        7 | 2026-01-20
+           5 | Eric Hana         |       13 | 2026-02-18
+           6 | FOFO Ndengeyimana |          |
+(16 rows)
 ```
 
-**Business interpretation:** surfaces customers who signed up but never bought anything (here, Faustin Bizimana) — a list marketing can target for re-engagement. An INNER JOIN would have silently hidden this customer.
+Fofo Ndengeyimana shows up with nothing on the order side — that's the whole point of using LEFT JOIN here. An inner join would have just dropped him, and marketing wouldn't know he exists to re-engage him.
 
 ---
 
 ## CTE query
 
-### Customers whose total spend is above the average
+### Customers spending above the average
 
 ```sql
 WITH customer_totals AS (
@@ -175,64 +165,58 @@ WHERE total_spent > (SELECT AVG(total_spent) FROM customer_totals)
 ORDER BY total_spent DESC;
 ```
 
-**Explanation:** the CTE `customer_totals` first computes each customer's lifetime spend (quantity × price, summed across all their order items). The outer query then filters to customers above the average of those totals. Using a CTE avoids repeating the 3-way join and lets the average be computed cleanly against pre-aggregated rows rather than raw line items.
+The CTE does the hard part first — one row per customer with their total spend (quantity × price, summed across every item they've bought). Then the outer query just filters against the average of that. Doing it this way means the average is computed over customer totals, not raw line items, which would skew it toward whoever happens to have more items on their orders.
 
-**Result — all customer totals for reference:**
-
-```
- customer_id |    customer_name    | total_spent
--------------+---------------------+-------------
-           2 | Brian Mugisha       |       22.40
-           3 | Claudine Iradukunda |       16.50
-           1 | Alice Uwase         |       14.00
-           4 | David Niyonzima     |       13.40
-           5 | Esther Mukamana     |        4.60
-```
-
-Average spend = (22.40 + 16.50 + 14.00 + 13.40 + 4.60) / 5 = **14.18**
-
-**Above-average customers:**
+Totals for all 5 ordering customers:
 
 ```
- customer_id |    customer_name    | total_spent
--------------+---------------------+-------------
-           2 | Brian Mugisha       |       22.40
-           3 | Claudine Iradukunda |       16.50
+ customer_id |  customer_name  | total_spent
+-------------+-----------------+-------------
+           2 | Jean Morris     |       22.40
+           3 | Iyaraa Umwe     |       16.50
+           1 | Patrick Ndizeye |       14.00
+           4 | David Niyo      |       13.40
+           5 | Eric Hana       |        4.60
 ```
 
-**Business interpretation:** Brian and Claudine are the supermarket's highest-value customers — good candidates for loyalty perks. Esther's spend (4.60) is far below average, which flags her as a low-engagement customer worth a targeted promotion.
+Average is 14.18, so two customers clear it:
+
+```
+ customer_id | customer_name | total_spent
+-------------+---------------+-------------
+           2 | Jean Morris   |       22.40
+           3 | Iyaraa Umwe   |       16.50
+```
+
+Jean and Iyaraa are the two customers worth prioritizing for a loyalty program. Eric's total (4.60) is way under — he's the one I'd flag as low-engagement.
 
 ---
 
 ## Window-function queries
 
-### 1. Rank customers by total amount spent, highest first
+### 1. Rank customers by total spend
 
 ```sql
-WITH customer_totals AS ( ... same as above ... )
+WITH customer_totals AS ( ... )
 SELECT customer_id, customer_name, total_spent,
        RANK() OVER (ORDER BY total_spent DESC) AS spend_rank
 FROM customer_totals
 ORDER BY spend_rank;
 ```
 
-**Explanation:** `RANK()` orders customers by `total_spent` descending and assigns a rank, with ties sharing a rank (none occur here).
-
-**Result:**
+Same CTE as above, `RANK()` just turns it into a leaderboard.
 
 ```
- customer_id |    customer_name    | total_spent | spend_rank
--------------+---------------------+-------------+------------
-           2 | Brian Mugisha       |       22.40 |          1
-           3 | Claudine Iradukunda |       16.50 |          2
-           1 | Alice Uwase         |       14.00 |          3
-           4 | David Niyonzima     |       13.40 |          4
-           5 | Esther Mukamana     |        4.60 |          5
+ customer_id |  customer_name  | total_spent | spend_rank
+-------------+-----------------+-------------+------------
+           2 | Jean Morris     |       22.40 |          1
+           3 | Iyaraa Umwe     |       16.50 |          2
+           1 | Patrick Ndizeye |       14.00 |          3
+           4 | David Niyo      |       13.40 |          4
+           5 | Eric Hana       |        4.60 |          5
 ```
 
-**Business interpretation:** gives management an instant top-customer leaderboard for a VIP/loyalty program without manually sorting spend totals.
-
----
+Gives you the top-spender list without doing the sorting by hand — handy for a VIP list.
 
 ### 2. Number each customer's orders in the order placed
 
@@ -243,9 +227,7 @@ FROM orders
 ORDER BY customer_id, order_sequence;
 ```
 
-**Explanation:** `PARTITION BY customer_id` restarts the numbering for each customer; `ORDER BY order_date` numbers their orders chronologically (1st order, 2nd order, etc.).
-
-**Result:**
+`PARTITION BY customer_id` resets the count for each customer, so everyone gets their own 1st, 2nd, 3rd order instead of one continuous count across the whole table.
 
 ```
  customer_id | order_id | order_date | order_sequence
@@ -267,11 +249,9 @@ ORDER BY customer_id, order_sequence;
            5 |       13 | 2026-02-18 |              2
 ```
 
-**Business interpretation:** lets you spot each customer's 1st, 2nd, 3rd... order — useful for measuring repeat-purchase behavior, e.g. checking whether a customer's basket size grows between their 1st and later orders.
+Useful if you want to compare, say, a customer's first order to their later ones — does the basket grow, shrink, stay the same.
 
----
-
-### 3. Running total of revenue over time, ordered by order date
+### 3. Running total of revenue over time
 
 ```sql
 WITH order_revenue AS (
@@ -287,9 +267,7 @@ FROM order_revenue
 ORDER BY order_date, order_id;
 ```
 
-**Explanation:** the CTE computes each order's total revenue; the window function then sums `order_total` cumulatively over all preceding rows (ordered by date) to produce a running total.
-
-**Result:**
+Compute each order's total first, then let a running `SUM() OVER (ORDER BY order_date)` accumulate it.
 
 ```
  order_id | order_date | order_total | running_revenue
@@ -311,11 +289,9 @@ ORDER BY order_date, order_id;
        15 | 2026-03-01 |        5.40 |           70.90
 ```
 
-**Business interpretation:** shows cumulative revenue growth (total revenue reaches **70.90** by March 1), which is exactly the shape of chart management wants for a sales-trend dashboard — no need to pre-aggregate in a reporting tool.
+Total revenue across the sample data comes out to 70.90 by March 1 — this is basically the shape of a "revenue over time" chart without having to build one.
 
----
-
-### 4. Days between current and previous order, for customers with more than one order
+### 4. Days between a customer's orders
 
 ```sql
 WITH customer_order_gaps AS (
@@ -331,9 +307,7 @@ WHERE total_orders > 1
 ORDER BY customer_id, order_date;
 ```
 
-**Explanation:** `LAG(order_date)` (partitioned per customer, ordered by date) pulls in each customer's previous order date alongside the current one, and the difference is the gap in days. `COUNT(*) OVER (PARTITION BY customer_id)` filters out any customer with only a single order — every customer in this dataset happens to have more than one, except none were excluded here since all 5 ordering customers have 2+ orders. A customer's very first order naturally has no "previous" order, so it shows `NULL`.
-
-**Result:**
+`LAG()` grabs each customer's previous order date so I can subtract it from the current one. The `COUNT(*) OVER (...)` bit is there to drop anyone with only one order — doesn't matter for this dataset since all 5 ordering customers have 2+, but it's needed for the query to hold up in general. First order for each customer naturally has no "previous" to compare to, hence the null.
 
 ```
  customer_id | order_id | order_date | previous_order_date | days_since_previous_order
@@ -355,12 +329,12 @@ ORDER BY customer_id, order_date;
            5 |       13 | 2026-02-18 | 2026-01-20           |                        29
 ```
 
-**Business interpretation:** customers reorder roughly every 2–4 weeks (7–29 days apart). Esther Mukamana's 29-day gap is the widest — combined with her low total spend from the CTE query, she's the clearest churn-risk customer in this dataset.
+Gaps sit mostly between 1–4 weeks. Eric's 29-day gap is the widest one in the data — paired with him also having the lowest total spend from the CTE query, he's the customer I'd worry about losing.
 
 ---
 
-## Challenges & resolutions
+## Challenges
 
-- **No local Oracle installation.** The assignment's DDL is written in Oracle syntax (`NUMBER`, `VARCHAR2`). Rather than submit SQL that was never actually executed, I adapted the same schema/relationships to PostgreSQL (already installed locally) and ran every query for real against live data, so all results above are genuine query output, not hand-computed.
-- **Demonstrating the LEFT JOIN meaningfully.** With only 5 required customers all having orders, the LEFT JOIN query would look identical to an INNER JOIN. I added a 6th customer (Faustin Bizimana) with zero orders so the NULL-preserving behavior of LEFT JOIN is actually visible in the results.
-- **Avoiding ties/ambiguity in the CTE's average-spend filter.** Computing the average inside a scalar subquery against the same CTE (rather than a second aggregation pass) kept the query readable and guaranteed the average is calculated over customer-level totals, not raw order-item rows (which would have skewed it toward customers with many small line items).
+- **No Oracle locally.** I only had PostgreSQL set up, so I converted the given Oracle DDL (`NUMBER`, `VARCHAR2`) to Postgres equivalents (`INTEGER`, `NUMERIC`, `VARCHAR`). Table structure and query logic are identical — just the type keywords changed — and I ran everything against a real database rather than typing out SQL I couldn't test.
+- **Making the LEFT JOIN mean something.** With the minimum 5 customers, everyone would have had orders and the LEFT JOIN result would look exactly like an INNER JOIN. Added a 6th customer with zero orders specifically so the null-preserving behavior actually shows up.
+- **Getting the average right in the CTE query.** Filtering against `AVG(total_spent)` from the same CTE (instead of averaging raw order-item rows) keeps it correct — averaging unaggregated rows would have weighted customers with more line items too heavily.

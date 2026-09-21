@@ -1,15 +1,13 @@
 -- Sunrise Supermarket - Sample Data
--- 6 customers (one with zero orders, to demonstrate LEFT JOIN),
--- 8 products across 4 categories, 15 orders, 25 order items.
 
--- Customers
+-- Customers (Fofo has no orders, so JOIN 3 actually shows something)
 INSERT INTO customers (customer_id, customer_name, email, city) VALUES
-  (1, 'Alice Uwase',        'alice.uwase@example.com',   'Kigali'),
-  (2, 'Brian Mugisha',      'brian.mugisha@example.com', 'Musanze'),
-  (3, 'Claudine Iradukunda','claudine.irad@example.com', 'Huye'),
-  (4, 'David Niyonzima',    'david.niyo@example.com',    'Kigali'),
-  (5, 'Esther Mukamana',    'esther.muka@example.com',   'Rubavu'),
-  (6, 'Faustin Bizimana',   'faustin.bizi@example.com',  'Kigali'); -- no orders (tests LEFT JOIN)
+  (1, 'Patrick Ndizeye',    'patrick.ndizeye@example.com',   'Kigali'),
+  (2, 'Jean Morris',        'jean.morris@example.com',       'Musanze'),
+  (3, 'Iyaraa Umwe',        'iyaraa.umwe@example.com',       'Huye'),
+  (4, 'David Niyo',         'david.niyo@example.com',        'Kigali'),
+  (5, 'Eric Hana',          'eric.hana@example.com',         'Rubavu'),
+  (6, 'FOFO Ndengeyimana',  'fofo.ndengeyimana@example.com', 'Kigali');
 
 -- Products (4 categories)
 INSERT INTO products (product_id, product_name, category, price) VALUES

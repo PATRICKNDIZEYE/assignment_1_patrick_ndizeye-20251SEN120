@@ -1,9 +1,6 @@
--- Sunrise Supermarket - Queries
--- DBMS: PostgreSQL 16
+-- Sunrise Supermarket - Queries (PostgreSQL 16)
 
--- =========================================================
--- JOIN 1: Every order with customer's name, city, order date
--- =========================================================
+-- JOIN 1: every order with customer name, city, order date
 SELECT
   o.order_id,
   c.customer_name,
@@ -13,9 +10,7 @@ FROM orders o
 INNER JOIN customers c ON c.customer_id = o.customer_id
 ORDER BY o.order_date;
 
--- =========================================================
--- JOIN 2: Every order item with product name, category, price, quantity
--- =========================================================
+-- JOIN 2: every order item with product name, category, price, quantity
 SELECT
   oi.order_item_id,
   oi.order_id,
@@ -28,9 +23,7 @@ FROM order_items oi
 JOIN products p ON p.product_id = oi.product_id
 ORDER BY oi.order_id, oi.order_item_id;
 
--- =========================================================
--- JOIN 3: All customers and their orders, including customers with no orders
--- =========================================================
+-- JOIN 3: all customers and their orders, including customers with none
 SELECT
   c.customer_id,
   c.customer_name,
@@ -40,9 +33,7 @@ FROM customers c
 LEFT JOIN orders o ON o.customer_id = c.customer_id
 ORDER BY c.customer_id, o.order_date;
 
--- =========================================================
--- CTE: Customers whose total spend is above the average customer spend
--- =========================================================
+-- CTE: customers whose total spend is above the average
 WITH customer_totals AS (
   SELECT
     c.customer_id,
@@ -62,9 +53,7 @@ FROM customer_totals
 WHERE total_spent > (SELECT AVG(total_spent) FROM customer_totals)
 ORDER BY total_spent DESC;
 
--- =========================================================
--- WINDOW 1: Rank customers by total amount spent, highest first
--- =========================================================
+-- WINDOW 1: rank customers by total spend, highest first
 WITH customer_totals AS (
   SELECT
     c.customer_id,
@@ -84,9 +73,7 @@ SELECT
 FROM customer_totals
 ORDER BY spend_rank;
 
--- =========================================================
--- WINDOW 2: Number each customer's orders in the order placed
--- =========================================================
+-- WINDOW 2: number each customer's orders in the order placed
 SELECT
   customer_id,
   order_id,
@@ -95,9 +82,7 @@ SELECT
 FROM orders
 ORDER BY customer_id, order_sequence;
 
--- =========================================================
--- WINDOW 3: Running total of revenue over time, ordered by order date
--- =========================================================
+-- WINDOW 3: running total of revenue, ordered by order date
 WITH order_revenue AS (
   SELECT
     o.order_id,
@@ -116,10 +101,7 @@ SELECT
 FROM order_revenue
 ORDER BY order_date, order_id;
 
--- =========================================================
--- WINDOW 4: For customers with more than one order, days between
--- the current and previous order
--- =========================================================
+-- WINDOW 4: days between a customer's current and previous order
 WITH customer_order_gaps AS (
   SELECT
     customer_id,
