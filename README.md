@@ -62,6 +62,8 @@ Straightforward inner join — every order has a customer (it's a FK), so nothin
        15 | David Niyo      | Kigali  | 2026-03-01
 ```
 
+![Result](screenshots/01_join_orders_customers.png)
+
 This is basically the order log a support agent would want — customer name and city right there instead of chasing an ID. Kigali customers (me and David) show up the most in this batch.
 
 ### 2. Every order item with product, category, price, quantity
@@ -107,6 +109,8 @@ Joins the line items to the product catalog and throws in a `line_total` since i
 (25 rows)
 ```
 
+![Result](screenshots/02_join_order_items_products.png)
+
 This is the level of detail you'd actually pull for a "what's selling" report. Beverages and Dairy items carry the highest line totals even in small quantities, since they're priced higher than the Bakery/Produce items.
 
 ### 3. All customers and their orders, including customers with none
@@ -141,6 +145,8 @@ Same idea but LEFT JOIN, so customers with zero orders still show up (with nulls
            6 | FOFO Ndengeyimana |          |
 (16 rows)
 ```
+
+![Result](screenshots/03_left_join_customers_orders.png)
 
 Fofo Ndengeyimana shows up with nothing on the order side — that's the whole point of using LEFT JOIN here. An inner join would have just dropped him, and marketing wouldn't know he exists to re-engage him.
 
@@ -188,6 +194,8 @@ Average is 14.18, so two customers clear it:
            3 | Iyaraa Umwe   |       16.50
 ```
 
+![Result](screenshots/04_cte_above_average_spend.png)
+
 Jean and Iyaraa are the two customers worth prioritizing for a loyalty program. Eric's total (4.60) is way under — he's the one I'd flag as low-engagement.
 
 ---
@@ -215,6 +223,8 @@ Same CTE as above, `RANK()` just turns it into a leaderboard.
            4 | David Niyo      |       13.40 |          4
            5 | Eric Hana       |        4.60 |          5
 ```
+
+![Result](screenshots/05_window_rank_by_spend.png)
 
 Gives you the top-spender list without doing the sorting by hand — handy for a VIP list.
 
@@ -248,6 +258,8 @@ ORDER BY customer_id, order_sequence;
            5 |        7 | 2026-01-20 |              1
            5 |       13 | 2026-02-18 |              2
 ```
+
+![Result](screenshots/06_window_order_sequence.png)
 
 Useful if you want to compare, say, a customer's first order to their later ones — does the basket grow, shrink, stay the same.
 
@@ -289,6 +301,8 @@ Compute each order's total first, then let a running `SUM() OVER (ORDER BY order
        15 | 2026-03-01 |        5.40 |           70.90
 ```
 
+![Result](screenshots/07_window_running_revenue.png)
+
 Total revenue across the sample data comes out to 70.90 by March 1 — this is basically the shape of a "revenue over time" chart without having to build one.
 
 ### 4. Days between a customer's orders
@@ -328,6 +342,8 @@ ORDER BY customer_id, order_date;
            5 |        7 | 2026-01-20 |                      |
            5 |       13 | 2026-02-18 | 2026-01-20           |                        29
 ```
+
+![Result](screenshots/08_window_days_between_orders.png)
 
 Gaps sit mostly between 1–4 weeks. Eric's 29-day gap is the widest one in the data — paired with him also having the lowest total spend from the CTE query, he's the customer I'd worry about losing.
 
